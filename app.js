@@ -140,7 +140,7 @@ var InitDemo = function () {
   var viewMatrix = new Float32Array(16);
   var projMatrix = new Float32Array(16);
   mat4.identity(worldMatrix);
-  mat4.lookAt(viewMatrix, [0, 0, -8], [0, 0, 0], [0, 1, 0]);
+  mat4.lookAt(viewMatrix, [0, 0, -40], [0, 0, 0], [0, 1, 0]);
   mat4.perspective(
     projMatrix,
     glMatrix.toRadian(45),
@@ -159,30 +159,27 @@ var InitDemo = function () {
 
   var em0 = [-1, 1.0, 0.0];
   var em1 = [1, 1.0, 0.0];
-  var em2 = [0.0, 1.0, -1];
-  var em3 = [0.0, 1.0, 1];
+  var em2 = [0.0, 1.0, 1.0];
+  var em3 = [0.0, 1.0, 1.0];
 
   var edgeMidpoints = [em0, em1, em2, em3];
 
-  var edge = 0;
-
   animationTimer = 0;
-  var animationDuration = 200;
-
-  function spawn_new_panel() {
-    list_of_panels.push(worldMatrix.slice());
-  }
+  var animationDuration = 5;
 
   function rand_0_3() {
     return Math.floor(Math.random() * 4);
   }
 
-  spawn_new_panel();
+  list_of_panels.push(worldMatrix.slice());
 
   var nextMatrix = new Float32Array(16);
   mat4.identity(nextMatrix);
 
   rand = rand_0_3();
+  rand = 0;
+
+  var angleIncrement = (Math.PI / 2) / animationDuration;
 
   var loop = function () {
 
@@ -195,13 +192,24 @@ var InitDemo = function () {
       gl.drawElements(gl.TRIANGLES, boxIndices.length, gl.UNSIGNED_SHORT, 0);
     }
 
-    angle += 0.01;
+    angle += angleIncrement;
+    
+    if (animationTimer > animationDuration-1) {
+      angle = (Math.PI / 2);
+    }
 
     edgeMidpoint = edgeMidpoints[rand];
 
     mat4.copy(worldMatrix, nextMatrix);
     mat4.translate(worldMatrix, worldMatrix, edgeMidpoint);
-    mat4.rotate(worldMatrix, worldMatrix, angle, [0, 0, 1]); 
+
+    axis = [0, 0, 1];
+
+    if (rand > 1) {
+      axis = [1, 0, 0];
+    }
+
+    mat4.rotate(worldMatrix, worldMatrix, angle, axis); 
     mat4.translate(worldMatrix, worldMatrix, [-edgeMidpoint[0], -edgeMidpoint[1], -edgeMidpoint[2]]);
 
     gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
@@ -209,14 +217,14 @@ var InitDemo = function () {
     gl.drawElements(gl.TRIANGLES, boxIndices.length, gl.UNSIGNED_SHORT, 0);
     
     if (animationTimer >= animationDuration) {
-      spawn_new_panel();
+      list_of_panels.push(worldMatrix.slice());
       mat4.copy(nextMatrix, worldMatrix);
       rand = rand_0_3();
+      angle = 0;
       animationTimer = 0;
-      requestAnimationFrame(loop);
+    } else {
+      animationTimer += 1;
     }
-
-    animationTimer += 1;
 
     requestAnimationFrame(loop);
   };
