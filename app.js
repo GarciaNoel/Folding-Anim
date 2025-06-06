@@ -25,6 +25,7 @@ var fragmentShaderText = [
   "}",
 ].join("\n");
 
+
 var InitDemo = function () {
   console.log("This is working");
 
@@ -47,9 +48,6 @@ var InitDemo = function () {
   gl.frontFace(gl.CCW);
   gl.cullFace(gl.BACK);
 
-  //
-  // Create shaders
-  //
   var vertexShader = gl.createShader(gl.VERTEX_SHADER);
   var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
 
@@ -88,18 +86,13 @@ var InitDemo = function () {
     return;
   }
 
-  //
-  // Create buffer
-  //
   var boxVertices = [
     // X, Y, Z           R, G, B
-    // Top
     -1.0, 1.0, -1.0, 0.5, 0.5, 0.5, -1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 1.0, 1.0,
     1.0, 0.5, 0.5, 0.5, 1.0, 1.0, -1.0, 0.5, 0.5, 0.5,
   ];
 
   var boxIndices = [
-    // Top
     0, 1, 2, 0, 2, 3,
   ];
 
@@ -118,26 +111,25 @@ var InitDemo = function () {
   var positionAttribLocation = gl.getAttribLocation(program, "vertPosition");
   var colorAttribLocation = gl.getAttribLocation(program, "vertColor");
   gl.vertexAttribPointer(
-    positionAttribLocation, // Attribute location
-    3, // Number of elements per attribute
-    gl.FLOAT, // Type of elements
+    positionAttribLocation,
+    3, 
+    gl.FLOAT, 
     gl.FALSE,
-    6 * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
-    0 // Offset from the beginning of a single vertex to this attribute
+    6 * Float32Array.BYTES_PER_ELEMENT, 
+    0 
   );
   gl.vertexAttribPointer(
-    colorAttribLocation, // Attribute location
-    3, // Number of elements per attribute
-    gl.FLOAT, // Type of elements
+    colorAttribLocation, 
+    3,
+    gl.FLOAT, 
     gl.FALSE,
-    6 * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
-    3 * Float32Array.BYTES_PER_ELEMENT // Offset from the beginning of a single vertex to this attribute
+    6 * Float32Array.BYTES_PER_ELEMENT,
+    3 * Float32Array.BYTES_PER_ELEMENT
   );
 
   gl.enableVertexAttribArray(positionAttribLocation);
   gl.enableVertexAttribArray(colorAttribLocation);
 
-  // Tell OpenGL state machine which program should be active.
   gl.useProgram(program);
 
   var matWorldUniformLocation = gl.getUniformLocation(program, "mWorld");
@@ -161,18 +153,73 @@ var InitDemo = function () {
   gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
   gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
 
-  var xRotationMatrix = new Float32Array(16);
-  var yRotationMatrix = new Float32Array(16);
+  var list_of_panels = [];
 
-  //
-  // Main render loop
-  //
+  var angle = 0;
+
+  var em0 = [-1, 1.0, 0.0];
+  var em1 = [1, 1.0, 0.0];
+  var em2 = [0.0, 1.0, -1];
+  var em3 = [0.0, 1.0, 1];
+
+  var edgeMidpoints = [em0, em1, em2, em3];
+
+  var edge = 0;
+
+  animationTimer = 0;
+  var animationDuration = 200;
+
+  function spawn_new_panel() {
+    list_of_panels.push(worldMatrix.slice());
+  }
+
+  function rand_0_3() {
+    return Math.floor(Math.random() * 4);
+  }
+
+  spawn_new_panel();
+
+  var nextMatrix = new Float32Array(16);
+  mat4.identity(nextMatrix);
+
+  rand = rand_0_3();
+
   var loop = function () {
+
     gl.clearColor(0.75, 0.85, 0.8, 1.0);
     gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
+
+    for (var i = 0; i < list_of_panels.length; i++) {
+      newmat = list_of_panels[i] 
+      gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, newmat);
+      gl.drawElements(gl.TRIANGLES, boxIndices.length, gl.UNSIGNED_SHORT, 0);
+    }
+
+    angle += 0.01;
+
+    edgeMidpoint = edgeMidpoints[rand];
+
+    mat4.copy(worldMatrix, nextMatrix);
+    mat4.translate(worldMatrix, worldMatrix, edgeMidpoint);
+    mat4.rotate(worldMatrix, worldMatrix, angle, [0, 0, 1]); 
+    mat4.translate(worldMatrix, worldMatrix, [-edgeMidpoint[0], -edgeMidpoint[1], -edgeMidpoint[2]]);
+
+    gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
+
     gl.drawElements(gl.TRIANGLES, boxIndices.length, gl.UNSIGNED_SHORT, 0);
+    
+    if (animationTimer >= animationDuration) {
+      spawn_new_panel();
+      mat4.copy(nextMatrix, worldMatrix);
+      rand = rand_0_3();
+      animationTimer = 0;
+      requestAnimationFrame(loop);
+    }
+
+    animationTimer += 1;
 
     requestAnimationFrame(loop);
   };
+
   requestAnimationFrame(loop);
 };
