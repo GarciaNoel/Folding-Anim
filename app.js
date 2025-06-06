@@ -27,21 +27,24 @@ var fragmentShaderText = [
   "varying vec3 fragNormal;",
   "varying vec3 fragPosition;",
   "",
-  "uniform vec3 lightDirection;",
-  "uniform vec3 lightColor;",
+  "uniform vec3 lightDirectionA;",
+  "uniform vec3 lightColorA;",
+  "uniform vec3 lightDirectionB;",
+  "uniform vec3 lightColorB;",
   "uniform vec3 ambientColor;",
   "",
   "void main()",
   "{",
   "  vec3 norm = normalize(fragNormal);",
-  "  float diff = max(dot(norm, -lightDirection), 0.0);",
-  "  vec3 diffuse = diff * lightColor;",
+  "  float diffA = max(dot(norm, -lightDirectionA), 0.0);",
+  "  float diffB = max(dot(norm, -lightDirectionB), 0.0);",
+  "  vec3 diffuseA = diffA * lightColorA;",
+  "  vec3 diffuseB = diffB * lightColorB;",
   "  vec3 ambient = ambientColor;",
-  "  vec3 result = (ambient + diffuse) * fragColor;",
+  "  vec3 result = (ambient + diffuseA + diffuseB) * fragColor;",
   "  gl_FragColor = vec4(result, 1.0);",
   "}",
 ].join("\n");
-
 
 var InitDemo = function () {
   console.log("This is working");
@@ -162,12 +165,16 @@ var boxVertices = [
 
   gl.useProgram(program);
 
-  var lightDirectionLocation = gl.getUniformLocation(program, "lightDirection");
-  var lightColorLocation = gl.getUniformLocation(program, "lightColor");
+  var lightDirectionALocation = gl.getUniformLocation(program, "lightDirectionA");
+  var lightColorALocation = gl.getUniformLocation(program, "lightColorA");
+  var lightDirectionBLocation = gl.getUniformLocation(program, "lightDirectionB");
+  var lightColorBLocation = gl.getUniformLocation(program, "lightColorB");
   var ambientColorLocation = gl.getUniformLocation(program, "ambientColor");
 
-  gl.uniform3fv(lightDirectionLocation, [1.0, 0.0, 1.0]);
-  gl.uniform3fv(lightColorLocation, [1.0, 1.0, 1.0]);
+  gl.uniform3fv(lightDirectionALocation, [0.0, 0.0, 1.0]);
+  gl.uniform3fv(lightColorALocation, [1.0, 1.0, 1.0]);
+  gl.uniform3fv(lightDirectionBLocation, [0.0, 0.0, -1.0]);
+  gl.uniform3fv(lightColorBLocation, [1.0, 1.0, 1.0]);
   gl.uniform3fv(ambientColorLocation, [0.2, 0.2, 0.2]);
 
 
