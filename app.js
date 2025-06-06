@@ -3,7 +3,10 @@ var vertexShaderText = [
   "",
   "attribute vec3 vertPosition;",
   "attribute vec3 vertColor;",
+  "attribute vec3 vertNormal;",
   "varying vec3 fragColor;",
+  "varying vec3 fragNormal;",
+  "varying vec3 fragPosition;",
   "uniform mat4 mWorld;",
   "uniform mat4 mView;",
   "uniform mat4 mProj;",
@@ -11,6 +14,8 @@ var vertexShaderText = [
   "void main()",
   "{",
   "  fragColor = vertColor;",
+  "  fragNormal = mat3(mWorld) * vertNormal;",
+  "  fragPosition = vec3(mWorld * vec4(vertPosition, 1.0));",
   "  gl_Position = mProj * mView * mWorld * vec4(vertPosition, 1.0);",
   "}",
 ].join("\n");
@@ -19,9 +24,21 @@ var fragmentShaderText = [
   "precision mediump float;",
   "",
   "varying vec3 fragColor;",
+  "varying vec3 fragNormal;",
+  "varying vec3 fragPosition;",
+  "",
+  "uniform vec3 lightDirection;",
+  "uniform vec3 lightColor;",
+  "uniform vec3 ambientColor;",
+  "",
   "void main()",
   "{",
-  "  gl_FragColor = vec4(fragColor, 1.0);",
+  "  vec3 norm = normalize(fragNormal);",
+  "  float diff = max(dot(norm, -lightDirection), 0.0);",
+  "  vec3 diffuse = diff * lightColor;",
+  "  vec3 ambient = ambientColor;",
+  "  vec3 result = (ambient + diffuse) * fragColor;",
+  "  gl_FragColor = vec4(result, 1.0);",
   "}",
 ].join("\n");
 
@@ -86,11 +103,13 @@ var InitDemo = function () {
     return;
   }
 
-  var boxVertices = [
-    // X, Y, Z           R, G, B
-    -1.0, 1.0, -1.0, 0.5, 0.5, 0.5, -1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 1.0, 1.0,
-    1.0, 0.5, 0.5, 0.5, 1.0, 1.0, -1.0, 0.5, 0.5, 0.5,
-  ];
+var boxVertices = [
+  // X, Y, Z,   R, G, B,   NX, NY, NZ
+  -1.0, 1.0, -1.0, 0.5, 0.5, 0.5, 0, 1, 0,
+  -1.0, 1.0,  1.0, 0.5, 0.5, 0.5, 0, 1, 0,
+   1.0, 1.0,  1.0, 0.5, 0.5, 0.5, 0, 1, 0,
+   1.0, 1.0, -1.0, 0.5, 0.5, 0.5, 0, 1, 0,
+];
 
   var boxIndices = [
     0, 1, 2, 0, 2, 3,
@@ -110,27 +129,47 @@ var InitDemo = function () {
 
   var positionAttribLocation = gl.getAttribLocation(program, "vertPosition");
   var colorAttribLocation = gl.getAttribLocation(program, "vertColor");
+  var normalAttribLocation = gl.getAttribLocation(program, "vertNormal");
+
   gl.vertexAttribPointer(
     positionAttribLocation,
-    3, 
-    gl.FLOAT, 
+    3,
+    gl.FLOAT,
     gl.FALSE,
-    6 * Float32Array.BYTES_PER_ELEMENT, 
-    0 
+    9 * Float32Array.BYTES_PER_ELEMENT,
+    0
   );
   gl.vertexAttribPointer(
-    colorAttribLocation, 
+    colorAttribLocation,
     3,
-    gl.FLOAT, 
+    gl.FLOAT,
     gl.FALSE,
-    6 * Float32Array.BYTES_PER_ELEMENT,
+    9 * Float32Array.BYTES_PER_ELEMENT,
     3 * Float32Array.BYTES_PER_ELEMENT
+  );
+  gl.vertexAttribPointer(
+    normalAttribLocation,
+    3,
+    gl.FLOAT,
+    gl.FALSE,
+    9 * Float32Array.BYTES_PER_ELEMENT,
+    6 * Float32Array.BYTES_PER_ELEMENT
   );
 
   gl.enableVertexAttribArray(positionAttribLocation);
   gl.enableVertexAttribArray(colorAttribLocation);
+  gl.enableVertexAttribArray(normalAttribLocation);
 
   gl.useProgram(program);
+
+  var lightDirectionLocation = gl.getUniformLocation(program, "lightDirection");
+  var lightColorLocation = gl.getUniformLocation(program, "lightColor");
+  var ambientColorLocation = gl.getUniformLocation(program, "ambientColor");
+
+  gl.uniform3fv(lightDirectionLocation, [1.0, 0.0, 1.0]);
+  gl.uniform3fv(lightColorLocation, [1.0, 1.0, 1.0]);
+  gl.uniform3fv(ambientColorLocation, [0.2, 0.2, 0.2]);
+
 
   var matWorldUniformLocation = gl.getUniformLocation(program, "mWorld");
   var matViewUniformLocation = gl.getUniformLocation(program, "mView");
