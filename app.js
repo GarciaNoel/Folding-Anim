@@ -186,7 +186,7 @@ var boxVertices = [
   var viewMatrix = new Float32Array(16);
   var projMatrix = new Float32Array(16);
   mat4.identity(worldMatrix);
-  mat4.lookAt(viewMatrix, [0, 0, -80], [0, 0, 0], [0, 1, 0]);
+  mat4.lookAt(viewMatrix, [0, 0, -100], [0, 0, 0], [0, 1, 0]);
   mat4.perspective(
     projMatrix,
     glMatrix.toRadian(45),
@@ -210,7 +210,7 @@ var boxVertices = [
 
   var edgeMidpoints = [em0, em1, em2, em3];
 
-  var NUM_TRAILS = 16;
+  var NUM_TRAILS = 200;
   var trails = [];
   for (var t = 0; t < NUM_TRAILS; t++) {
     trails.push({
@@ -227,7 +227,7 @@ var boxVertices = [
     trails[t].rand = t % 4; // Start each trail on a different edge
   }
 
-  var animationDuration = 5;
+  var animationDuration = 2;
   var angleIncrement = (Math.PI / 2) / animationDuration;
 
   var loop = function () {
