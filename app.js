@@ -179,7 +179,7 @@ var boxVertices = [
   var viewMatrix = new Float32Array(16);
   var projMatrix = new Float32Array(16);
   mat4.identity(worldMatrix);
-  mat4.lookAt(viewMatrix, [0, 0, -40], [0, 0, 0], [0, 1, 0]);
+  mat4.lookAt(viewMatrix, [0, 0, -80], [0, 0, 0], [0, 1, 0]);
   mat4.perspective(
     projMatrix,
     glMatrix.toRadian(45),
@@ -203,66 +203,67 @@ var boxVertices = [
 
   var edgeMidpoints = [em0, em1, em2, em3];
 
-  animationTimer = 0;
-  var animationDuration = 5;
-
-  function rand_0_3() {
-    return Math.floor(Math.random() * 4);
+  var NUM_TRAILS = 16;
+  var trails = [];
+  for (var t = 0; t < NUM_TRAILS; t++) {
+    trails.push({
+      list_of_panels: [],
+      worldMatrix: new Float32Array(16),
+      nextMatrix: new Float32Array(16),
+      angle: 0,
+      animationTimer: 0,
+      rand: 0,
+    });
+    mat4.identity(trails[t].worldMatrix);
+    mat4.identity(trails[t].nextMatrix);
+    trails[t].list_of_panels.push(trails[t].worldMatrix.slice());
+    trails[t].rand = t % 4; // Start each trail on a different edge
   }
 
-  list_of_panels.push(worldMatrix.slice());
-
-  var nextMatrix = new Float32Array(16);
-  mat4.identity(nextMatrix);
-
-  rand = rand_0_3();
-  rand = 0;
-
+  var animationDuration = 5;
   var angleIncrement = (Math.PI / 2) / animationDuration;
 
   var loop = function () {
-
     gl.clearColor(0.75, 0.85, 0.8, 1.0);
     gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
 
-    for (var i = 0; i < list_of_panels.length; i++) {
-      newmat = list_of_panels[i] 
-      gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, newmat);
-      gl.drawElements(gl.TRIANGLES, boxIndices.length, gl.UNSIGNED_SHORT, 0);
+    // Draw all panels for all trails
+    for (var t = 0; t < NUM_TRAILS; t++) {
+      var trail = trails[t];
+      for (var i = 0; i < trail.list_of_panels.length; i++) {
+        gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, trail.list_of_panels[i]);
+        gl.drawElements(gl.TRIANGLES, boxIndices.length, gl.UNSIGNED_SHORT, 0);
+      }
     }
 
-    angle += angleIncrement;
-    
-    if (animationTimer > animationDuration-1) {
-      angle = (Math.PI / 2);
-    }
+    // Animate each trail
+    for (var t = 0; t < NUM_TRAILS; t++) {
+      var trail = trails[t];
+      trail.angle += angleIncrement;
 
-    edgeMidpoint = edgeMidpoints[rand];
+      if (trail.animationTimer > animationDuration - 1) {
+        trail.angle = (Math.PI / 2);
+      }
 
-    mat4.copy(worldMatrix, nextMatrix);
-    mat4.translate(worldMatrix, worldMatrix, edgeMidpoint);
+      var edgeMidpoint = edgeMidpoints[trail.rand];
+      mat4.copy(trail.worldMatrix, trail.nextMatrix);
+      mat4.translate(trail.worldMatrix, trail.worldMatrix, edgeMidpoint);
 
-    axis = [0, 0, 1];
+      var axis = [0, 0, 1];
+      if (trail.rand > 1) axis = [1, 0, 0];
 
-    if (rand > 1) {
-      axis = [1, 0, 0];
-    }
+      mat4.rotate(trail.worldMatrix, trail.worldMatrix, trail.angle, axis);
+      mat4.translate(trail.worldMatrix, trail.worldMatrix, [-edgeMidpoint[0], -edgeMidpoint[1], -edgeMidpoint[2]]);
 
-    mat4.rotate(worldMatrix, worldMatrix, angle, axis); 
-    mat4.translate(worldMatrix, worldMatrix, [-edgeMidpoint[0], -edgeMidpoint[1], -edgeMidpoint[2]]);
-
-    gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
-
-    gl.drawElements(gl.TRIANGLES, boxIndices.length, gl.UNSIGNED_SHORT, 0);
-    
-    if (animationTimer >= animationDuration) {
-      list_of_panels.push(worldMatrix.slice());
-      mat4.copy(nextMatrix, worldMatrix);
-      rand = rand_0_3();
-      angle = 0;
-      animationTimer = 0;
-    } else {
-      animationTimer += 1;
+      if (trail.animationTimer >= animationDuration) {
+        trail.list_of_panels.push(trail.worldMatrix.slice());
+        mat4.copy(trail.nextMatrix, trail.worldMatrix);
+        trail.rand = Math.floor(Math.random() * 4);
+        trail.angle = 0;
+        trail.animationTimer = 0;
+      } else {
+        trail.animationTimer += 1;
+      }
     }
 
     requestAnimationFrame(loop);
