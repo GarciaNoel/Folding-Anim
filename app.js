@@ -177,7 +177,6 @@ var boxVertices = [
   gl.uniform3fv(lightColorBLocation, [1.0, 1.0, 1.0]);
   gl.uniform3fv(ambientColorLocation, [0.2, 0.2, 0.2]);
 
-
   var matWorldUniformLocation = gl.getUniformLocation(program, "mWorld");
   var matViewUniformLocation = gl.getUniformLocation(program, "mView");
   var matProjUniformLocation = gl.getUniformLocation(program, "mProj");
@@ -198,10 +197,6 @@ var boxVertices = [
   gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
   gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
   gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
-
-  var list_of_panels = [];
-
-  var angle = 0;
 
   var em0 = [-1, 1.0, 0.0];
   var em1 = [1, 1.0, 0.0];
@@ -224,7 +219,7 @@ var boxVertices = [
     mat4.identity(trails[t].worldMatrix);
     mat4.identity(trails[t].nextMatrix);
     trails[t].list_of_panels.push(trails[t].worldMatrix.slice());
-    trails[t].rand = t % 4; // Start each trail on a different edge
+    trails[t].rand = t % 4;
   }
 
   var animationDuration = 2;
@@ -234,7 +229,6 @@ var boxVertices = [
     gl.clearColor(0.75, 0.85, 0.8, 1.0);
     gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
 
-    // Draw all panels for all trails
     for (var t = 0; t < NUM_TRAILS; t++) {
       var trail = trails[t];
       for (var i = 0; i < trail.list_of_panels.length; i++) {
@@ -243,7 +237,6 @@ var boxVertices = [
       }
     }
 
-    // Animate each trail
     for (var t = 0; t < NUM_TRAILS; t++) {
       var trail = trails[t];
       trail.angle += angleIncrement;
